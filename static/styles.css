@@ -1,0 +1,77 @@
+/* Size for brand */
+nav .navbar-brand
+{
+    font-size: xx-large;
+}
+
+/* Colors for brand */
+nav .navbar-brand .blue
+{
+    color: #537fbe;
+}
+nav .navbar-brand .red
+{
+    color: #ea433b;
+}
+nav .navbar-brand .yellow
+{
+    color: #f5b82e;
+}
+nav .navbar-brand .green
+{
+    color: #2e944b;
+}
+
+.colorDiv
+{
+    border: 5px outset blue;
+    background-color: black;
+}
+
+.mainDiv
+{
+    margin: auto;
+    width: 100%;
+
+}
+
+.headerDiv
+{
+    text-align: center;
+}
+
+.projectDiv
+{
+    width: 50%;
+    text-align: left;
+    float:left;
+    height: 300px;
+
+}
+
+.projectImageDiv
+{
+    width: 50%;
+    float: left;
+    height: 300px;
+}
+
+#bar 
+{
+    width: 100%;
+    height: 3rem;
+    text-align: center;
+    color: white;
+}
+
+.tableProject
+{
+    
+}
+
+.center
+{
+    text-align: center;
+    color:white;
+}
+

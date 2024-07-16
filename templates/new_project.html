@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    New projects
+{% endblock %}
+
+{% block main %}
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Project id</th>
+                <th>Project name</th>
+                <th colspan="2">Review status</th>
+                <th>Rating</th>
+                <th>Publishing date</th>
+                <th>Date created</th>
+                <th>Funding amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in new_projects %}
+                    <td>{{ project.id }}</td>
+                    <td>{{ project.name }}</td>
+                    {% if project.reviewed == 0 %}
+                    <td>
+
+                                <div>
+                                    <form action="/approve" method="post" id="approved">
+                                        <button type="submit">approve</button>
+                                        <input name="project_id" type="hidden" value="{{ project.id }}">
+                                    </form>
+                                </div>
+
+                    </td>
+                    <td>
+                                <div>
+                                    <form action="/disapprove" method="post">
+                                        <button type="submit">disapprove</button>
+                                        <input name="project_id" type="hidden" value="{{ project.id }}">
+                                    </form>
+                                </div>
+                    </td>
+                    
+                    {% else %}
+                        {% if project.reviewed == 0 %}
+                            <td>Not reviewed</td>
+                        {% elif project.reviewed == 1 %}
+                            <td>Reviewed</td>
+                        {% else %}
+                            <td>Status unknown</td> 
+                        {% endif %}
+
+                        {% if project.approved == 0 %}
+                            <td>Not approved</td>
+                        {% elif project.approved == 1 %}
+                            <td>Approved</td>
+                        {% else %}
+                            <td>Status unknown</td> 
+                        {% endif %}
+                    {% endif %}
+
+                    {% if project.rating == 0 and project.reviewed == 0 %}
+                    <td>
+                        <select form="approved" name="rated_value" value="{{ project.id }}">
+                            {% for value in rating %}
+                                <option>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    {% else %}
+                    <td>{{ project.rating}}</td>
+                    {% endif %}
+                    {% if not project.publish_date %}
+                    <td>
+                        <input form="approved" type="date" id="publishing_date" name="publishing_date" value="{{ project.id}}">
+                    </td>
+                    {% else %}
+                    <td>{{ project.publish_date }}</td>
+                    {% endif%}
+                    <td>{{ project.date }}</td>
+                    <td>{{ project.funding_money }}</td>
+                    <td>
+                        <form action="/view_project" method="post">
+                            <button type="submit">show project</button>
+                            <input name="project_id" type="hidden" value="{{ project.id }}">
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
+
