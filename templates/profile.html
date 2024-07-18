@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Attribute</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+
+
+        <tbody>
+            {% for info in person_info %}
+                <tr>
+                    <td>Id</td>
+                    <td>{{ info.id }}</td>
+                </tr>
+                <tr>
+                    <td>User name</td>
+                    <td>{{ info.username }}</td>
+                </tr>
+                <tr>
+                    <td>First name</td>
+                    <td>{{ info.first_name }}</td>
+                </tr>
+                <tr>
+                    <td>Last name</td>
+                    <td>{{ info.last_name }}</td>
+                </tr>
+                <tr>
+                    <td>Cash</td>
+                    <td>{{ info.cash}}</td>
+                </tr>
+                <tr>
+                    <td>Type</td>
+                    <td>{{ info.type }}</td>
+                </tr>
+                <tr>
+                    <td>Date of birth</td>
+                    <td>{{ info.date_of_birth }}</td>
+                </tr>
+                <tr>
+                    <td>Country</td>
+                    <td>{{ info.country }}</td>
+                </tr>
+                <tr>
+                    <td>State</td>
+                    <td>{{ info.state }}</td>
+                </tr>
+                <tr>
+                    <td>City</td>
+                    <td>{{ info.city }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="/password">
+        <button type="submit">Change password</button>
+    </a>
+    <a href="/cash">
+        <button type="submit">Add cash</button>
+    </a>
+{% endblock %}
+

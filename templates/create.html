@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Create new project
+{% endblock %}
+
+{% block main %}
+    <form action="/create" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="project_name" placeholder="Project name" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="goal" placeholder="Goal" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="interest_rate" placeholder="Interest Rate" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="funding_money" placeholder="Amount of money to funded" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="duration" placeholder="Duration of loan" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="general_information" placeholder="General information" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="detail_information" placeholder="Detailed description of project" type="text">
+        </div>
+
+        <div class="mb-3">
+            <label for="file">File</label>
+            <input id="file" name="file" type="file"/>
+        </div>
+        <div class="mb-3">
+            <label>Choose a type:</label>
+            <select name="type" class="form-control w-auto mx-auto form-select" aria-label="Default select example">
+                    {% for type in company_types %}
+                        <option>{{ type }}</option>
+                    {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Create</button>
+    </form>
+{% endblock %}
