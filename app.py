@@ -5,7 +5,8 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
-from datetime import date
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 
 import pathlib
 import logging
@@ -428,18 +429,35 @@ def view_project():
         "SELECT * FROM users WHERE id = ?", id
     )[0]['type']
 
+    # ADD: functionality to not show payment plan if there has no money been invested in the project!!
+
     project_id = request.form.get("project_id")
     info = db.execute("SELECT * FROM project WHERE id = ?", project_id )[0]
 
-    duration = info['duration']
+    investment = db.execute("SELECT * FROM transactions WHERE user_id = ? AND project_id = ?", id, project_id)[0]['amount']
 
-    app.logger.info(duration)
+    duration = info['duration']
+    interest_rate = info['interest_rate']
+    publish_date = info['publish_date']
+    publish_date = datetime.strptime(publish_date, '%Y-%m-%d').date()
+
 
     payment_plan = []
-
+    total_payoff = 0
+    total_interest = 0
+    total_total = 0
+    
+    
     for x in range(duration):
-        app.logger.info(x)
-        payment_plan.insert(x, {"payment_number": x + 1, "date": "2", "interest": "3", "payoff": "4", "total": "5"})
+        #app.logger.info(x)
+        payoff = round(investment / duration * (x + 1), 2)
+        interest = round(((investment - payoff) * interest_rate * 0.01 / 12), 2)
+        total = round((investment / duration) + interest, 2) 
+        payment_plan.insert(x, {"payment_number": x + 1, "date":publish_date + relativedelta(months=x), "interest": interest, "payoff": payoff, "total": total})
+        total_interest = total_interest + interest
+        total_total = total_total + total
+
+    payment_plan.insert(x + 1, {"payment_number": "total", "date": "", "interest": total_interest, "payoff": investment, "total": total_total})
 
     app.logger.info(payment_plan)
 
