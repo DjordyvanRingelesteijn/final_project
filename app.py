@@ -6,14 +6,15 @@ from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from dateutil.relativedelta import relativedelta
-from datetime import datetime
+from flask_apscheduler import APScheduler
+from dateutil.relativedelta import relativedelta
 
+import datetime
 import pathlib
-import logging
 import base64
 
 
-from helpers import apology, login_required, lookup, usd
+from helpers import apology, login_required
 
 UPLOAD_FOLDER = 'static/project_pictures'
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -22,9 +23,6 @@ ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 app = Flask(__name__)
 
 app.debug = True
-
-# Custom filter
-app.jinja_env.filters["usd"] = usd
 
 # Configure session to use filesystem (instead of signed cookies)
 app.config["SESSION_PERMANENT"] = False
@@ -45,6 +43,8 @@ minimum_interest_rate = 0.0
 maximum_interest_rate = 20.0
 amount = [*range(0,10250,250)]
 rating = [*range(0,6,1)]
+
+
 
 @app.after_request
 def after_request(response):
@@ -79,7 +79,7 @@ def history():
     """show transaction history of user"""
     id = session["user_id"]
 
-    history = db.execute("SELECT transactions.id, transactions.project_id, transactions.date, transactions.amount, project.name FROM transactions INNER JOIN project ON transactions.project_id = project.id WHERE transactions.user_id =? ORDER BY transactions.date DESC ", id)
+    history = db.execute("SELECT transactions.id, transactions.project_id, transactions.date, transactions.amount, transactions.payment_type project.name FROM transactions INNER JOIN project ON transactions.project_id = project.id WHERE transactions.user_id =? ORDER BY transactions.date DESC ", id)
 
     xtype = db.execute(
         "SELECT * FROM users WHERE id = ?", id
@@ -109,7 +109,8 @@ def buy():
     
     cash_new = current_cash - amount_bought
     
-    db.execute("INSERT INTO transactions (user_id, project_id, amount) VALUES (?, ?, ?)", id, project_id, amount_bought)
+
+    db.execute("INSERT INTO transactions (user_id, project_id, amount, payment_type) VALUES (?, ?, ?, ?)", id, project_id, amount_bought, 'buy')
     db.execute("UPDATE users SET cash = ? WHERE id = ?", cash_new, id )
     invested_money = int(db.execute("SELECT * FROM project WHERE id = ?", project_id)[0]['invested_money'])  
     db.execute("UPDATE project SET invested_money = ? WHERE id = ?", invested_money + amount_bought, project_id)
@@ -433,34 +434,34 @@ def view_project():
 
     project_id = request.form.get("project_id")
     info = db.execute("SELECT * FROM project WHERE id = ?", project_id )[0]
-
-    investment = db.execute("SELECT * FROM transactions WHERE user_id = ? AND project_id = ?", id, project_id)[0]['amount']
-
-    duration = info['duration']
-    interest_rate = info['interest_rate']
-    publish_date = info['publish_date']
-    publish_date = datetime.strptime(publish_date, '%Y-%m-%d').date()
-
-
     payment_plan = []
-    total_payoff = 0
-    total_interest = 0
-    total_total = 0
-    
-    
-    for x in range(duration):
-        #app.logger.info(x)
-        payoff = round(investment / duration * (x + 1), 2)
-        interest = round(((investment - payoff) * interest_rate * 0.01 / 12), 2)
-        total = round((investment / duration) + interest, 2) 
-        payment_plan.insert(x, {"payment_number": x + 1, "date":publish_date + relativedelta(months=x), "interest": interest, "payoff": payoff, "total": total})
-        total_interest = total_interest + interest
-        total_total = total_total + total
 
-    payment_plan.insert(x + 1, {"payment_number": "total", "date": "", "interest": total_interest, "payoff": investment, "total": total_total})
+    try:
+        investment = db.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND project_id = ?", id, project_id)[0]['SUM(amount)']
+
+        duration = info['duration']      
+        interest_rate = info['interest_rate']
+        publish_date = info['publish_date']
+        publish_date = datetime.datetime.strptime(publish_date, '%Y-%m-%d').date()
+
+        total_interest = 0
+        total_total = 0
+        
+        for x in range(duration):
+
+            payoff = round(investment / duration * (x + 1), 2)
+            interest = round(((investment - payoff) * interest_rate * 0.01 / 12), 2)
+            total = round((investment / duration) + interest, 2) 
+            payment_plan.insert(x, {"payment_number": x + 1, "date":publish_date + relativedelta(months=x), "interest": interest, "payoff": payoff, "total": total})
+            total_interest = total_interest + interest
+            total_total = total_total + total
+
+        payment_plan.insert(x + 1, {"payment_number": "total", "date": "", "interest": total_interest, "payoff": investment, "total": total_total})
+
+    except:
+        pass      
 
     app.logger.info(payment_plan)
-
     image = convertToBase64Data(info['picture'])
 
     return render_template("view_project.html", amount=amount, info=info, type=xtype, image=image, payment_plan=payment_plan)
@@ -513,7 +514,6 @@ def approved():
         if not publish_date:
             return apology("please provide a publishing date")
 
-        today = date.today()
 
         #if publish_date < date.today():           
         #    return apology("please provide a publishing date in the future")
@@ -582,3 +582,68 @@ def convertToBinaryData(filename):
 def convertToBase64Data(filename):
     encoded_image = (base64.b64encode(filename).decode("utf-8"))
     return encoded_image
+
+
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
+
+@scheduler.task(trigger='cron', day_of_week='mon-sun', hour=12, minute=0, id='update_DB')
+
+def update_DB():
+
+    projects = db.execute("SELECT id, name, interest_rate, publish_date, duration FROM project")
+
+    for project in projects:
+        app.logger.info(project['duration'])
+        app.logger.info(project['publish_date'])
+
+        publish_date = project['publish_date']
+        duration = project['duration']
+        project_id = project['id']
+        interest_rate = project['interest_rate']
+
+        date_today = datetime.date.today()
+        date_today = datetime.date(2024, 11, 24)
+        app.logger.info(date_today)
+        base_date = datetime.datetime.strptime(publish_date, '%Y-%m-%d').date()
+
+
+        date_list = [base_date + relativedelta(months=x) for x in range(duration)]
+        #app.logger.info(date_list)
+        
+        # check if a payment need to be made (every month)
+        if date_today in date_list:    
+            # check who owns the project, the amount bought, interest rate, cash, 
+            index = date_list.index(date_today)
+            if index > duration:
+                app.logger.info('project has been paid off')
+
+            owners = db.execute("SELECT * FROM transactions WHERE project_id = ?", project_id)
+
+            for owner in owners:
+                investment = owner['amount']
+                user_id = owner['user_id']
+                project_id = owner['project_id']
+                payoff = round(investment / duration)
+                interest = round(((investment - (payoff * index)) * interest_rate * 0.01 / 12), 2)
+
+                total = round((payoff + interest), 2) 
+                
+                #update transactions
+                db.execute("INSERT INTO transactions (user_id, project_id, amount, payment_type) VALUES (?, ?, ?, ?)", user_id, project_id, total, 'return')
+                
+                #add total to cash reverse
+                cash = db.execute("SELECT * FROM users WHERE id = ?", user_id)[0]['cash']
+                app.logger.info(cash)
+                app.logger.info(total)
+                new_cash = cash + total
+                db.execute("UPDATE users SET cash = ? WHERE id = ?", new_cash, user_id)
+
+                # update the project database (redeemed)
+                redeemed_money = db.execute("SELECT * FROM project WHERE id = ?", project_id)[0]['redeemed_money']
+                redeemed_money_new = redeemed_money + total
+                db.execute("UPDATE project SET redeemed_money = ? WHERE id = ?", redeemed_money_new, project_id)
+
+if __name__ == '__main__':
+    app.run(debug=False)

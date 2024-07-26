@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    History
+    transactions
 {% endblock %}
 
 {% block main %}
@@ -14,6 +14,7 @@
                 <th>Project name</th>
                 <th>Date</th>
                 <th>Amount</th>
+                <th>Type</th>
             </tr>
         </thead>
         <tbody>
@@ -24,6 +25,7 @@
                     <td>project name</td>
                     <td>{{ transaction.date }}</td>
                     <td>{{ transaction.amount }}</td>
+                    <td>{{ transaction.payment_type }}</td>
                     <td>
                         <form action="/view_project" method="post">
                             <button type="submit">View project</button>
