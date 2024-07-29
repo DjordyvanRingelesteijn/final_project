@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block main %}
+
+    <div class="album py-5 bg-body-tertiary">
+
+      <div class="container">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+          {% for info in project_info%}
+          <div class="col">
+            <div class="card shadow-sm">
+              <h1>{{ info.name }}</h1>
+            <img src="data:image/png;base64,{{ encoded_images[info.id - 1] }}" alt="image" width="100%" height="225">
+              <div class="card-body">
+                <p class="card-text"><font style="vertical-align: inherit;"><font style="vertical-align: inherit;">{{ info.information }}</font></font></p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <form action="/view_project" method="post">
+                      <div class="btn-group">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><font style="vertical-align: inherit;"><font style="vertical-align: inherit;">View project</font></font></button>
+                        <input name="project_id" type="hidden" value="{{info.id}}">
+                      </div>
+                    </form>
+                  <small class="text-body-secondary"><font style="vertical-align: inherit;"><font style="vertical-align: inherit;">{{ info.date }}</font></font></small>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+{% endblock %}
+

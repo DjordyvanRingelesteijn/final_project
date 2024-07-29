@@ -59,18 +59,23 @@ def after_request(response):
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    """Show form to create a new project"""
-    id = session["user_id"]
-    rows = db.execute(
-        "SELECT * FROM users WHERE id = ?", id
-    )
+    """Show last 3 projects"""
+    project_info = db.execute("SELECT * FROM project WHERE reviewed = 1 ORDER BY date LIMIT 3")
 
-    xtype = rows[0]['type']
-    
-    if xtype:
-        return render_template("layout.html",type=xtype)
-    else:
-        return apology("TODO")
+    all_project = db.execute("SELECT * FROM project")
+
+    encoded_images = []
+
+    for x in range(len(all_project)):
+        encoded_images.append(convertToBase64Data(all_project[x]['picture']))
+
+
+    id = session["user_id"]
+    xtype = db.execute(
+        "SELECT * FROM users WHERE id = ?", id
+    )[0]['type']
+
+    return render_template("home.html", project_info=project_info, type=xtype, encoded_images=encoded_images)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -467,8 +472,7 @@ def delayed_payments():
     if request.method == "GET":
         return render_template("delayed_payments.html", type=xtype, delayed_projects=delayed_projects)
     
-
-
+    
 @app.route("/new_project", methods=["GET", "POST"])
 @login_required
 def new_projects():
@@ -574,8 +578,8 @@ scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
 
-#@scheduler.task(trigger='cron', day_of_week='mon-sun', hour=14, minute=34, id='update_DB')
-@scheduler.task(trigger='interval', seconds = 10, id='update_DB')
+@scheduler.task(trigger='cron', day_of_week='mon-sun', hour=14, minute=34, id='update_DB')
+#@scheduler.task(trigger='interval', seconds = 10, id='update_DB')
 
 def update_DB():
 
@@ -610,7 +614,8 @@ def update_DB():
             
             cash_needed = total_payoff + total_interest
             if cash_owner < cash_needed:
-                db.execute("UPDATE project SET delayed = TRUE WHERE id = ?", project_id)
+                db.execute("UPDATE project SET delayed = TRUE, date_delayed = ? WHERE id = ?", date_today, project_id)
+                
 
             app.logger.info(cash_owner)
             

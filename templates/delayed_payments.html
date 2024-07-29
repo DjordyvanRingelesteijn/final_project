@@ -12,8 +12,7 @@
                 <th>Project id</th>
                 <th>Project name</th>
                 <th>Date</th>
-                <th>Amount</th>
-                <th>Time delayed</th>
+                <th>Date delayed</th>
             </tr>
         </thead>
         <tbody>
@@ -22,7 +21,7 @@
                     <td>{{ project.id }}</td>
                     <td>{{ project.name }}</td>
                     <td>{{ project.publish_date }}</td>
-
+                    <td>{{ project.date_delayed }}</td>
                 </tr>
             {% endfor %}
         </tbody>
