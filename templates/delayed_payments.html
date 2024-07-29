@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    History
+    Delayed payments
 {% endblock %}
 
 {% block main %}
@@ -20,10 +20,9 @@
             {% for project in delayed_projects %}
                 <tr>
                     <td>{{ project.id }}</td>
-                    <td>{{ project.project_id }}</td>
                     <td>{{ project.name }}</td>
-                    <td>{{ project.date }}</td>
-                    <td>{{ project.amount }}</td>
+                    <td>{{ project.publish_date }}</td>
+
                 </tr>
             {% endfor %}
         </tbody>

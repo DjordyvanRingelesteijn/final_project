@@ -15,7 +15,8 @@
                 <th>Rating</th>
                 <th>Publishing date</th>
                 <th>Date created</th>
-                <th>Funding amount</th>
+                <th>Funding money</th>
+                <th>Redeemed money</th>
             </tr>
         </thead>
         <tbody>
@@ -80,6 +81,7 @@
                     {% endif%}
                     <td>{{ project.date }}</td>
                     <td>{{ project.funding_money }}</td>
+                    <td>{{ project.redeemed_money  }}</td>
                     <td>
                         <form action="/view_project" method="post">
                             <button type="submit">show project</button>

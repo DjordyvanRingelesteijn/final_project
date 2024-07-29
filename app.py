@@ -73,20 +73,6 @@ def index():
         return apology("TODO")
 
 
-@app.route("/history", methods=["GET", "POST"])
-@login_required
-def history():
-    """show transaction history of user"""
-    id = session["user_id"]
-
-    history = db.execute("SELECT transactions.id, transactions.project_id, transactions.date, transactions.amount, transactions.payment_type project.name FROM transactions INNER JOIN project ON transactions.project_id = project.id WHERE transactions.user_id =? ORDER BY transactions.date DESC ", id)
-
-    xtype = db.execute(
-        "SELECT * FROM users WHERE id = ?", id
-    )[0]['type']
-
-    return render_template("history.html", history=history, type=xtype)
-
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
 def buy():
@@ -476,7 +462,7 @@ def delayed_payments():
         "SELECT * FROM users WHERE id = ?", id
     )[0]['type']
 
-    delayed_projects = db.execute("SELECT * FROM project")
+    delayed_projects = db.execute("SELECT * FROM project WHERE delayed = TRUE")
 
     if request.method == "GET":
         return render_template("delayed_payments.html", type=xtype, delayed_projects=delayed_projects)
@@ -588,39 +574,48 @@ scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
 
-@scheduler.task(trigger='cron', day_of_week='mon-sun', hour=12, minute=0, id='update_DB')
+#@scheduler.task(trigger='cron', day_of_week='mon-sun', hour=14, minute=34, id='update_DB')
+@scheduler.task(trigger='interval', seconds = 10, id='update_DB')
 
 def update_DB():
 
-    projects = db.execute("SELECT id, name, interest_rate, publish_date, duration FROM project")
+    projects = db.execute("SELECT id, name, interest_rate, publish_date, user_id, duration, funding_money FROM project")
 
     for project in projects:
-        app.logger.info(project['duration'])
-        app.logger.info(project['publish_date'])
-
         publish_date = project['publish_date']
         duration = project['duration']
         project_id = project['id']
         interest_rate = project['interest_rate']
-
+        user_id = project['user_id']
+        cash_owner = db.execute("SELECT * from users WHERE id = ?", user_id)[0]['cash']
         date_today = datetime.date.today()
         date_today = datetime.date(2024, 11, 24)
-        app.logger.info(date_today)
         base_date = datetime.datetime.strptime(publish_date, '%Y-%m-%d').date()
-
+        funding_money = project['funding_money']
 
         date_list = [base_date + relativedelta(months=x) for x in range(duration)]
         #app.logger.info(date_list)
         
         # check if a payment need to be made (every month)
         if date_today in date_list:    
-            # check who owns the project, the amount bought, interest rate, cash, 
             index = date_list.index(date_today)
+
             if index > duration:
                 app.logger.info('project has been paid off')
 
             owners = db.execute("SELECT * FROM transactions WHERE project_id = ?", project_id)
+            # check if project leader has enough money to pay. if not raise a flag to admins.
+            total_payoff = round(funding_money / duration)
+            total_interest = round(((funding_money - (total_payoff * index)) * interest_rate * 0.01 / 12), 2)             
+            
+            cash_needed = total_payoff + total_interest
+            if cash_owner < cash_needed:
+                db.execute("UPDATE project SET delayed = TRUE WHERE id = ?", project_id)
 
+            app.logger.info(cash_owner)
+            
+            # pay out all the owners of the project
+            
             for owner in owners:
                 investment = owner['amount']
                 user_id = owner['user_id']
@@ -635,8 +630,6 @@ def update_DB():
                 
                 #add total to cash reverse
                 cash = db.execute("SELECT * FROM users WHERE id = ?", user_id)[0]['cash']
-                app.logger.info(cash)
-                app.logger.info(total)
                 new_cash = cash + total
                 db.execute("UPDATE users SET cash = ? WHERE id = ?", new_cash, user_id)
 
